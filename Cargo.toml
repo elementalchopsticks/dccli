@@ -1,0 +1,12 @@
+[package]
+name = "dccli"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+anyhow = "1.0.56"
+chrono = "0.4.19"
+clap = { version = "3.1.8", features = ["derive"] }
+indicatif = "0.16.2"
+regex = "1.5.5"
