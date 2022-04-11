@@ -29,13 +29,9 @@ const USERNAME: &str = "TestTest";
 static PING_RE: SyncLazy<Regex> = SyncLazy::new(|| Regex::new(r#"^(?:\S+ )?PING (\S+)"#).unwrap());
 static MODE_RE: SyncLazy<Regex> =
     SyncLazy::new(|| Regex::new(r#"^(?:\S+ )?MODE \S+ :\S+$"#).unwrap());
-static DCC_RE: SyncLazy<Regex> =
-    SyncLazy::new(|| Regex::new(r#"DCC SEND "?(.+)"? (\d+) (\d+) (\d+)"#).unwrap());
-
-// TODO: for some reason this regex doesn't work
-/*static DCC_RE: SyncLazy<Regex> = SyncLazy::new(|| {
-    Regex::new(r#"^(?:\S+ )?PRIVMSG \S+ :DCC SEND "(.+)" (\d+) (\d+) (\d+)$"#).unwrap()
-});*/
+static DCC_RE: SyncLazy<Regex> = SyncLazy::new(|| {
+    Regex::new(r#":(\S+)!.+ PRIVMSG.*DCC SEND "?(.*?)"? (\d+) (\d+) (\d+)"#).unwrap()
+});
 
 impl Irc {
     pub fn connect(args: &'static Args) -> Result<Self> {
@@ -149,17 +145,18 @@ impl Irc {
                 );
             }
         } else if DCC_RE.is_match(message) {
-            // TODO: check origin of message and match with bot
             let caps = DCC_RE.captures(message).unwrap();
-            let filename = caps[1].to_owned();
-            let address = &caps[2];
-            let port = caps[3].parse::<u16>().unwrap();
-            let size = caps[4].parse::<usize>().unwrap();
+            let bot = &caps[1];
+            let filename = caps[2].to_owned();
+            let address = &caps[3];
+            let port = caps[4].parse::<u16>().unwrap();
+            let size = caps[5].parse::<usize>().unwrap();
 
-            let dl = Download::new(filename, address, port, size)
-                .context("failed to initialise dcc connection")?;
-
-            return Ok(Some(dl));
+            if bot == self.args.bot {
+                let dl = Download::new(filename, address, port, size)
+                    .context("failed to initialise dcc connection")?;
+                return Ok(Some(dl));
+            }
         }
 
         Ok(None)
